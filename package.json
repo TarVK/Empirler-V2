@@ -1,0 +1,33 @@
+{
+    "name": "Empirler-V2",
+    "version": "0.0.0",
+    "description": "A system to create context free languages together with their semantics",
+    "main": "build/Empirler.js",
+    "scripts": {
+        "start": "npm run start:scripting-language",
+        "start:scripting-language": "webpack-dev-server --open --config src/demos/scripting-language/webpack.config.js",
+        "build": "webpack",
+        "build:demos": "npm run build-demo:scripting-language",
+        "build-demo:scripting-language": "webpack --config src/demos/scripting-language/webpack.config.js"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/TarVK/Empirler-V2.git"
+    },
+    "author": "Tar van Krieken",
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/TarVK/Empirler-V2/issues"
+    },
+    "homepage": "https://github.com/TarVK/Empirler-V2",
+    "dependencies": {},
+    "devDependencies": {
+        "babel-cli": "^6.26.0",
+        "babel-loader": "^7.1.5",
+        "babel-preset-env": "^1.7.0",
+        "webpack": "^4.16.2",
+        "webpack-cli": "^3.1.0",
+        "webpack-dev-server": "^3.1.5",
+        "webpack-serve": "^2.0.2"
+    }
+}
