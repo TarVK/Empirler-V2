@@ -68,7 +68,7 @@ export default class CFG {
      * @returns {string} The variable that was found
      */
     getVariable(index) {
-        return Object.keys(this.normalizedGrammar)[index];
+        return this.sequencedKeys[index];
     }
 
     /**
@@ -85,6 +85,8 @@ export default class CFG {
      * @returns {String[][]} The list of variable recursion loops, where every loop is a list of definitions
      */
     __checkForIndirectLeftRecursion(normalizedGrammar) {
+        this.sequencedKeys = [];
+
         // Track what indirect left recursions have been detected
         const recursions = [];
 
@@ -93,11 +95,11 @@ export default class CFG {
             // Create a stack of variables to analyze, but store as definition for better feedback
             const stack = [
                 {
-                    definition: { variable: variable }, // Not a real definition, but we care about the variable
-                    childDefinitions: normalizedGrammar[
+                    variable: variable,
+                    definitions: normalizedGrammar[
                         variable
-                    ].definitions.normal.slice(0)
-                }
+                    ].definitions.normal.slice(0),
+                },
             ];
 
             while (stack.length > 0) {
@@ -105,12 +107,17 @@ export default class CFG {
                 const top = stack[stack.length - 1];
 
                 // Get the next definition
-                const definition = top.childDefinitions.pop();
+                const definition = top.definitions.pop();
+                top.definition = definition;
 
                 // Check if there is still a definition
                 if (!definition) {
                     // Pop the item of the stack
                     stack.pop();
+
+                    // Add the variable to the sequencedKeys
+                    if (this.sequencedKeys.indexOf(top.variable) == -1)
+                        this.sequencedKeys.push(top.variable);
                 } else {
                     // Check if the definition has a variable at the first location
                     if (
@@ -122,23 +129,20 @@ export default class CFG {
 
                         // Check if the stack doesn't contain the variable
                         const index = stack.findIndex(
-                            item => item.definition.variable == variable
+                            item => item.variable == variable
                         );
                         if (index == -1) {
                             // If it doesn't, push the variable onto the stack
                             stack.push({
-                                definition: definition,
-                                childDefinitions: normalizedGrammar[
+                                variable: variable,
+                                definitions: normalizedGrammar[
                                     variable
-                                ].definitions.normal.slice(0)
+                                ].definitions.normal.slice(0),
                             });
                         } else {
                             // If it does, add the loop to the output
                             recursions.push(
-                                stack
-                                    .slice(index + 1)
-                                    .map(item => item.definition)
-                                    .concat(definition)
+                                stack.slice(index).map(item => item.definition)
                             );
                         }
                     }
@@ -229,8 +233,8 @@ export default class CFG {
         const normalizedVariableData = Object.assign({}, variableData, {
             definitions: {
                 leftRecursive: leftRecursiveDefinitions,
-                normal: normalDefinitions
-            }
+                normal: normalDefinitions,
+            },
         });
 
         // Return the normalized variableData
@@ -264,7 +268,7 @@ export default class CFG {
                             "\nShould be a object, string or regular expression"
                     );
                 }
-            })
+            }),
         });
     }
 

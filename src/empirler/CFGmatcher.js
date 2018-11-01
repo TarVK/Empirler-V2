@@ -39,9 +39,28 @@ export default class CFGmatcher {
                 ) {
                     top.best = {
                         stackItem: part,
-                        range: part.match.range
+                        range: part.match.range,
                     };
+                    if (top.attempt == -1) top.best.isClosing = true;
                 }
+
+                if (
+                    !this.cache[this.errorIndex][top.variableMatch.variable] ||
+                    this.cache[this.errorIndex][top.variableMatch.variable]
+                        .match.range.start > part.match.range.start
+                ) {
+                    this.cacheItem(part, this.errorIndex);
+                    console.log(">", part.variableMatch.variable, part);
+                }
+
+                let p = part;
+                while (
+                    p.match.parts[0].variableMatch &&
+                    p.match.parts[0].variableMatch.variable ==
+                        part.variableMatch.variable
+                )
+                    p = p.match.parts[0];
+                top.subAttempt = p.attempt;
             }
             this.nextAttempt();
             return;
@@ -61,14 +80,16 @@ export default class CFGmatcher {
         if (
             partIndex == 0 &&
             top.attempt == 0 &&
-            !top.isInflationAttempt &&
-            this.index != this.errorIndex
+            !top.isInflationAttempt
+            // && this.index != this.errorIndex
         ) {
-            // Check if there is an cached item, and if so, use it
-            if (this.checkCache()) {
-                //console.log("foundCache");
-                return;
-            }
+            const parent = this.stack[this.stack.length - 2];
+            if (!parent || parent.variableMatch.variable != errorRepairVar)
+                if (this.checkCache()) {
+                    // Check if there is an cached item, and if so, use it
+                    //console.log("foundCache");
+                    return;
+                }
         }
 
         // Check what part should come next
@@ -128,7 +149,7 @@ export default class CFGmatcher {
                 // And set the furthest data
                 this.furthestFound = {
                     index: this.index,
-                    stackItem: top
+                    stackItem: top,
                 };
             }
 
@@ -137,8 +158,8 @@ export default class CFGmatcher {
                 match: match,
                 range: {
                     start: this.index - match[0].length,
-                    end: this.index
-                }
+                    end: this.index,
+                },
             };
         } else {
             // Output a message that can be used for debugging, if enabled
@@ -170,25 +191,45 @@ export default class CFGmatcher {
         let top = this.stack[stackIndex];
 
         if (top.variableMatch.variable == errorRepairVar) {
-            const nextVar = this.grammar.getVariable(++top.attempt);
-            if (nextVar) {
+            // Check if there are more possibilities to matchfor this variabletype
+            if (top.subAttempt) {
+                const variable = this.grammar.getVariable(top.attempt);
                 this.index = this.errorIndex;
+                console.log(variable, top.subAttempt);
                 this.pushStack(
                     this.getChildStackItem(
                         {
-                            variable: nextVar
+                            variable: variable,
+                        },
+                        top.subAttempt + 1
+                    )
+                );
+                top.subAttempt = null;
+                return;
+            }
+
+            const nextVar = this.grammar.getVariable(++top.attempt);
+            if (nextVar) {
+                this.index = this.errorIndex;
+                console.log(nextVar);
+                this.pushStack(
+                    this.getChildStackItem(
+                        {
+                            variable: nextVar,
                         },
                         0
                     )
                 );
             } else {
                 this.stack.pop();
-                this.index = top.best.range.end;
                 let newTop = this.stack[stackIndex - 1];
-                if (newTop) {
+                if (newTop && !top.best.isClosing) {
+                    this.index = top.best.range.end;
+
                     if (!newTop.matchErrors) newTop.matchErrors = [];
                     newTop.matchErrors.push(top.best.stackItem);
                 }
+                this.errorIndex = undefined;
             }
 
             return;
@@ -342,11 +383,19 @@ export default class CFGmatcher {
             return true;
         }
     }
-    cacheItem(stackItem) {
+    cacheItem(stackItem, index) {
+        if (!index) index = stackItem.match.range.start;
+
         // Create the cache at the index if not present
-        let cacheAtIndex = this.cache[stackItem.match.range.start];
-        if (!cacheAtIndex)
-            cacheAtIndex = this.cache[stackItem.match.range.start] = {};
+        let cacheAtIndex = this.cache[index];
+        if (!cacheAtIndex) cacheAtIndex = this.cache[index] = {};
+
+        // Don't save a failed attempt if a successfull attempt was already found at this index
+        if (
+            cacheAtIndex[stackItem.variableMatch.variable] &&
+            !stackItem.definition
+        )
+            return;
 
         // Cache the item for future usage
         cacheAtIndex[stackItem.variableMatch.variable] = stackItem;
@@ -368,15 +417,15 @@ export default class CFGmatcher {
             match: {
                 parts: [inflationTarget],
                 range: {
-                    start: inflationTarget.match.range.start
-                }
+                    start: inflationTarget.match.range.start,
+                },
             },
             parent: top && {
                 stackItem: top,
-                patternIndex: top.match.parts.length
+                patternIndex: top.match.parts.length,
             },
             isInflationAttempt: true,
-            inflationTarget: inflationTarget
+            inflationTarget: inflationTarget,
         };
     }
     getChildStackItem(variableMatch, attempt) {
@@ -404,13 +453,13 @@ export default class CFGmatcher {
             match: {
                 parts: [],
                 range: {
-                    start: this.index
-                }
+                    start: this.index,
+                },
             },
             parent: top && {
                 stackItem: top,
-                patternIndex: top.match.parts.length
-            }
+                patternIndex: top.match.parts.length,
+            },
         };
     }
 
@@ -423,7 +472,7 @@ export default class CFGmatcher {
             if (parent) {
                 stackItem = parent.stackItem;
 
-                stackItem.match.parts = stackItem.match.parts.splice(
+                stackItem.match.parts = stackItem.match.parts.slice(
                     0,
                     parent.patternIndex
                 );
@@ -437,36 +486,58 @@ export default class CFGmatcher {
 
     continue() {
         const stack = this.getStackFromItem(this.furthestFound.stackItem);
+        const top = stack[stack.length - 1];
 
-        this.stack = stack.concat(
-            {
-                variableMatch: {
-                    variable: errorRepairVar
-                },
-                attempt: 0,
-                match: {
-                    range: {
-                        start: 0
-                    },
-                    parts: []
-                },
-                best: {
-                    range: {
-                        start: Infinity,
-                        end: 0
-                    },
-                    stackItem: null
-                }
-            },
-            this.getChildStackItem(
-                {
-                    variable: this.grammar.getVariable(0)
-                },
-                0
-            )
-        );
         this.errorIndex = this.index;
         this.finished = false;
+
+        const nextExpected = top.definition.pattern[top.match.parts.length];
+        const stackRepairItem = {
+            variableMatch: {
+                variable: errorRepairVar,
+            },
+            attempt: 0,
+            subAttempt: null,
+            match: {
+                range: {
+                    start: this.errorIndex,
+                },
+                parts: [],
+            },
+            best: {
+                range: {
+                    start: Infinity,
+                    end: 0,
+                },
+                isClosing: true,
+                stackItem: null,
+            },
+        };
+
+        if (nextExpected.variable) {
+            stackRepairItem.attempt = -1;
+            this.stack = stack.concat(
+                stackRepairItem,
+                this.getChildStackItem(nextExpected, 0)
+            );
+        } else {
+            const match = this.expect(nextExpected);
+
+            if (match) {
+                stackRepairItem.best.range = match.range;
+                this.index = this.errorIndex;
+            }
+
+            this.stack = stack.concat(
+                stackRepairItem,
+                this.getChildStackItem(
+                    {
+                        variable: this.grammar.getVariable(0),
+                    },
+                    0
+                )
+            );
+        }
     }
 
     /*
@@ -746,11 +817,10 @@ export default class CFGmatcher {
 
     getErrorMessage() {}
 
-    stepAll() {
-        let i = 10000;
+    stepAll(maxSteps = 10000) {
         do {
             this.step();
-        } while (this.stack.length > 0 && i-- > 0);
+        } while (this.stack.length > 0 && maxSteps-- > 0);
         return this.ast;
     }
 }

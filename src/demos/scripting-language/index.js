@@ -40,4 +40,7 @@ window.cfg = new CFG({
 //     'test.something(+ testing); plop = "test"; const n = test(test()())'
 // );
 
-window.matcher = new CFGmatcher(cfg, "test.something(+ testing);");
+window.matcher = new CFGmatcher(
+    cfg,
+    "test.something(+ something(), n.6); testing"
+);
