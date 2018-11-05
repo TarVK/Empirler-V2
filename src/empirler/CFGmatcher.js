@@ -29,15 +29,15 @@ export default class CFGmatcher {
             match: {
                 parts: [inflationTarget],
                 range: {
-                    start: inflationTarget.match.range.start
-                }
+                    start: inflationTarget.match.range.start,
+                },
             },
             parent: top && {
                 stackItem: top,
-                patternIndex: top.match.parts.length
+                patternIndex: top.match.parts.length,
             },
             isInflationAttempt: true,
-            inflationTarget: inflationTarget
+            inflationTarget: inflationTarget,
         };
     }
     getChildStackItem(variableMatch, attempt) {
@@ -70,8 +70,8 @@ export default class CFGmatcher {
             },
             parent: top && {
                 stackItem: top,
-                patternIndex: top.match.parts.length
-            }
+                patternIndex: top.match.parts.length,
+            },
         };
     }
 
@@ -84,7 +84,7 @@ export default class CFGmatcher {
             if (parent) {
                 stackItem = parent.stackItem;
 
-                stackItem.match.parts = stackItem.match.parts.splice(
+                stackItem.match.parts = stackItem.match.parts.slice(
                     0,
                     parent.patternIndex
                 );
@@ -100,7 +100,7 @@ export default class CFGmatcher {
         let i = 10000;
         do {
             this.step();
-        } while (this.stack.length > 0 && i-- > 0);
+        } while (this.stack.length > 0 && maxSteps-- > 0);
         return this.ast;
     }
 }

@@ -9,13 +9,33 @@ export default class AST {
         if (!part) part = this.root;
 
         let out = "";
-        console.log(part);
         let lastIndex = part.match.range.start;
         part.match.parts.forEach((childPart, index) => {
             if (childPart) {
                 const childStart = (childPart.match.range || childPart.range)
                     .start;
                 if (index > 0 && lastIndex != childStart) {
+                    console.log(part);
+                    if (part.matchErrors) {
+                        part.matchErrors.forEach(em => {
+                            if (
+                                em.match.range.start >= lastIndex &&
+                                em.match.range.end <= childStart
+                            ) {
+                                out +=
+                                    "<span class=error style=color:darkred;background-color:pink>" +
+                                    escapeHtml(
+                                        this.input.substring(
+                                            lastIndex,
+                                            em.match.range.start
+                                        )
+                                    ) +
+                                    this.highlight(em) +
+                                    "</span>";
+                                lastIndex = em.match.range.end;
+                            }
+                        });
+                    }
                     out +=
                         "<span class=error style=color:darkred;background-color:pink>" +
                         escapeHtml(
