@@ -1,9 +1,7 @@
-import CFGmatcher from "./CFGmatcher";
 export default class AST {
-    constructor(grammar, input) {
-        this.grammar = gramamr;
+    constructor(input, root) {
         this.input = input;
-        this.cache = {};
+        this.root = root;
     }
     highlight(part) {
         if (!part) part = this.root;

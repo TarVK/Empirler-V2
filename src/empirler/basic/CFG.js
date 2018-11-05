@@ -1,4 +1,10 @@
 export default class CFG {
+    /**
+     * Creates a context free grammar that can be used by a context free grammar matcher
+     * @param {Object} grammar - The grammar to wrap
+     * @param {string} startVariable - The variable that should be used as the grammar's start variable
+     * @constructs CFG
+     */
     constructor(grammar, startVariable) {
         // Store the input variables
         this.inputGrammar = grammar;

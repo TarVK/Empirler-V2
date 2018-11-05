@@ -33,6 +33,20 @@ export default class CFG {
                 "Indirect left recursion detected: \n" + recursionText
             );
         }
+
+        //// Extract all the normal definitions
+        //const normalDefinitions = [];
+        //Object.keys(this.normalizedGrammar).forEach(key=>{
+        //    // Add the definitions to the overall normal definitions
+        //    normalDefinitions.push.apply(normalDefinitions, this.normalizedGrammar[key].definitions.normal);
+        //});
+
+        //this.normalizedGrammar[errorRepairVar] = {
+        //    definitions: {
+        //        normal: normalDefinitions,
+        //        leftRecursive: [],
+        //    }
+        //};
     }
 
     /**
@@ -111,26 +125,12 @@ export default class CFG {
                             item => item.definition.variable == variable
                         );
                         if (index == -1) {
-                            // Get the variable group
-                            const variableGroup = normalizedGrammar[variable];
-
-                            // If this doesn't exist, throw an error
-                            if (!variableGroup)
-                                throw new Error(
-                                    "Undefined variable " +
-                                        variable +
-                                        " in " +
-                                        this.__getDefinitionIdentifier(
-                                            definition
-                                        )
-                                );
-
                             // If it doesn't, push the variable onto the stack
                             stack.push({
                                 definition: definition,
-                                childDefinitions: variableGroup.definitions.normal.slice(
-                                    0
-                                )
+                                childDefinitions: normalizedGrammar[
+                                    variable
+                                ].definitions.normal.slice(0)
                             });
                         } else {
                             // If it does, add the loop to the output

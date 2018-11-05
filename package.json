@@ -4,11 +4,13 @@
     "description": "A system to create context free languages together with their semantics",
     "main": "build/Empirler.js",
     "scripts": {
-        "start": "npm run start:scripting-language",
+        "start": "npm run start:logic",
         "start:scripting-language": "webpack-dev-server --open --config src/demos/scripting-language/webpack.config.js",
+        "start:logic": "webpack-dev-server --open --config src/demos/logic/webpack.config.js",
         "build": "webpack",
-        "build:demos": "npm run build-demo:scripting-language",
-        "build-demo:scripting-language": "webpack --config src/demos/scripting-language/webpack.config.js"
+        "build:demos": "npm run build-demo:scripting-language && npm run build-demo:logic",
+        "build-demo:scripting-language": "webpack --config src/demos/scripting-language/webpack.config.js",
+        "build-demo:logic": "webpack --config src/demos/logic/webpack.config.js"
     },
     "repository": {
         "type": "git",
