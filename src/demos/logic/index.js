@@ -7,7 +7,7 @@ import { CFG, CFGmatcher } from "../../empirler";
  *
  * We use the build method ourselves at the bottom of the code, when we perform our treewalk
  * The build method provides semantics for the syntax we matched
- * It is a method that builds a function which will result in the boolean expression result
+ * It is a method that builds a function which will return the result of thethe boolean expression when called
  */
 
 //prettier-ignore
@@ -16,45 +16,36 @@ window.cfg = new CFG({
         {
             name: "or", 
             pattern: ["ors", /\s*\|\s*/, "ors"], 
-            build: m=>{
-                return ()=>m[0]() || m[2]();
-            }
+            build: m=> (vars)=>m[0](vars) || m[2](vars)
         },
         {
             name: "or-descent", 
             pattern: ["ands"], 
-            build: m=>m[0]
+            build: m=> m[0]
         },
     ],
     ands: [
         {
             name: "and", 
             pattern: ["ands", /\s*\&\s*/, "ands"],
-            build: m=>{
-                return ()=>m[0]() && m[2]();
-            }
+            build: m=> (vars)=>m[0](vars) && m[2](vars)
         },
         {
             name: "and-descent", 
             pattern: ["variable"],
-            build: m=>m[0]
+            build: m=> m[0]
         },
     ],
     variable: [
         {
             name: "variable", 
             pattern: [/\s*(\w+)\s*/],
-            build: m=>{
-                const variable = m[0][1];
-                return ()=>window[variable];
-            }
+            build: m=> (vars)=>vars[m[0][1]]
         },
         {
             name: "not", 
             pattern: [/\s*\!/, "variable"],
-            build: m=>{
-                return ()=>!m[1]();
-            }
+            build: m=> (vars)=>!m[1](vars)
         },
         {
             name: "group", 
@@ -95,9 +86,7 @@ if (match instanceof Error) {
     // Retrieve the main build
     const executeExpression = match.root.build;
 
-    // Set up some variables, and run the build
-    window.t = true;
-    window.f = false;
-    const result = executeExpression();
+    // Set up some variables, and run the build on some variables
+    const result = executeExpression({ t: true, f: false });
     console.log(result);
 }
