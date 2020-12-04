@@ -1,3 +1,5 @@
+Notice: this project has been abandoned. There are already nice general parser frameworks out there such as [chevrotain](https://github.com/SAP/chevrotain). Making an all-in-one system that can work as editor/highlighter+parser+executor would be cool, but I am not dedicated to it anymore and wouldn't be able to do it by myself.
+
 # Empirler-V2
 This will be an improved version of [Empirler v1](https://github.com/TarVK/Empirler)
 
